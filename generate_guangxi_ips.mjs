@@ -1,6 +1,3 @@
-import fs from 'fs'
-import path from 'path'
-
 const cidrs = [
   '116.8.0.0/14',
   '113.16.0.0/15',

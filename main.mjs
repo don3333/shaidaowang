@@ -63,7 +63,7 @@ async function sendMessage(index = 0) {
     setTimeout(() => {
       xiaoShuoIndex = nextXiaoShuoIndex
       sendMessage(index + 1)
-    }, 200)
+    }, 1000)
   } catch (err) {
     sendMessage(index + 1)
   }
