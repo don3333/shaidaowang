@@ -48,20 +48,25 @@ async function sendMessage(index = 0) {
     sendMessage(0)
     return
   }
-  const ws = await getSocket(ip)
-  if (xiaoShuoIndex > xiaoShuoText.length) xiaoShuoIndex = 0
-  const nextXiaoShuoIndex = xiaoShuoIndex + 150
-  ws.send(JSON.stringify({
-    ip,
-    message: xiaoShuoText.slice(xiaoShuoIndex, nextXiaoShuoIndex),
-    type: 'message',
-    username: '广西用户'
-  }))
-  setTimeout(() => {
-    ws.terminate()
-    xiaoShuoIndex = nextXiaoShuoIndex
+  try {
+    const ws = await getSocket(ip)
+      if (xiaoShuoIndex > xiaoShuoText.length) xiaoShuoIndex = 0
+      const nextXiaoShuoIndex = xiaoShuoIndex + 150
+      ws.send(JSON.stringify({
+        ip,
+        message: xiaoShuoText.slice(xiaoShuoIndex, nextXiaoShuoIndex),
+        type: 'message',
+        username: '广西用户'
+      }))
+      setTimeout(() => {
+        ws.terminate()
+        xiaoShuoIndex = nextXiaoShuoIndex
+        sendMessage(index + 1)
+      }, 500)
+  } catch (err) {
+    console.log(ip, err)
     sendMessage(index + 1)
-  }, 500)
+  }
 }
 
 sendMessage()
