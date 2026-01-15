@@ -1,7 +1,7 @@
 import WebSocket from 'ws'
 import fs from 'node:fs'
 import { getGuangxiIps } from './generate_guangxi_ips.mjs'
-const ips = await getGuangxiIps(1000)
+const ips = await getGuangxiIps(50)
 
 const url = 'ws://175.178.29.106:8000/ws'
 
@@ -34,37 +34,37 @@ const getSocket = (ip) => {
       resolve(ws)
     })
     ws.on('error', (err) => {
-      reject(err)
+      resolve(null)
     })
   })
 }
+
+let socketList = await Promise.all(ips.map(ip => getSocket(ip)))
+socketList = socketList.filter(ws => ws !== null)
 
 
 let xiaoShuoIndex = 0
 
 async function sendMessage(index = 0) {
-  const ip = ips[index]
-  if (index >= ips.length) {
+  if (index >= socketList.length) {
     sendMessage(0)
     return
   }
   try {
-    const ws = await getSocket(ip)
-      if (xiaoShuoIndex > xiaoShuoText.length) xiaoShuoIndex = 0
-      const nextXiaoShuoIndex = xiaoShuoIndex + 150
-      ws.send(JSON.stringify({
-        ip,
-        message: xiaoShuoText.slice(xiaoShuoIndex, nextXiaoShuoIndex),
-        type: 'message',
-        username: '广西用户'
-      }))
-      setTimeout(() => {
-        ws.terminate()
-        xiaoShuoIndex = nextXiaoShuoIndex
-        sendMessage(index + 1)
-      }, 200)
+    const ws = socketList[index]
+    if (xiaoShuoIndex > xiaoShuoText.length) xiaoShuoIndex = 0
+    const nextXiaoShuoIndex = xiaoShuoIndex + 150
+    ws.send(JSON.stringify({
+      ip: ips[index],
+      message: xiaoShuoText.slice(xiaoShuoIndex, nextXiaoShuoIndex),
+      type: 'message',
+      username: '广西用户'
+    }))
+    setTimeout(() => {
+      xiaoShuoIndex = nextXiaoShuoIndex
+      sendMessage(index + 1)
+    }, 200)
   } catch (err) {
-    console.log(ip, err)
     sendMessage(index + 1)
   }
 }
