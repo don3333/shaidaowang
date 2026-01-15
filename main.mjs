@@ -1,7 +1,7 @@
 import WebSocket from 'ws'
 import fs from 'node:fs'
 import { getGuangxiIps } from './generate_guangxi_ips.mjs'
-const ips = await getGuangxiIps(5)
+const ips = await getGuangxiIps(1000)
 
 const url = 'ws://175.178.29.106:8000/ws'
 
@@ -62,7 +62,7 @@ async function sendMessage(index = 0) {
         ws.terminate()
         xiaoShuoIndex = nextXiaoShuoIndex
         sendMessage(index + 1)
-      }, 500)
+      }, 200)
   } catch (err) {
     console.log(ip, err)
     sendMessage(index + 1)
