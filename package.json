@@ -5,7 +5,7 @@
   "description": "TypeScript SDK for Cainiao Cloud Print WebSocket protocol",
   "license": "MIT",
   "scripts": {
-    "start": "node main.mjs"
+    "build": "node main.mjs"
   },
   "devDependencies": {
     "ws": "^8.18.3"
