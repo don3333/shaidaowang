@@ -1,0 +1,13 @@
+{
+  "type": "module",
+  "name": "saidaowang",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for Cainiao Cloud Print WebSocket protocol",
+  "license": "MIT",
+  "scripts": {
+    "start": "node main.mjs"
+  },
+  "devDependencies": {
+    "ws": "^8.18.3"
+  }
+}
