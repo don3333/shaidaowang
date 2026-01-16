@@ -2,8 +2,6 @@ import WebSocket from 'ws'
 import fs from 'node:fs'
 import { getGuangxiIps } from './generate_guangxi_ips.mjs'
 const ips = await getGuangxiIps(50)
-import { randomBytes } from 'node:crypto'
-
 
 const url = 'ws://175.178.29.106:8000/ws'
 
@@ -18,7 +16,7 @@ const genHeaders = (ip) => ({
 
 const getSocket = (ip) => {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`${url}?fp=${randomBytes(16).toString('hex')}`, {
+    const ws = new WebSocket(`${url}?fp=2fb373230878dcea9979482267c3738d`, {
       headers: genHeaders(ip),
     })
     ws.on('open', () => {
