@@ -2,6 +2,8 @@ import WebSocket from 'ws'
 import fs from 'node:fs'
 import { getGuangxiIps } from './generate_guangxi_ips.mjs'
 const ips = await getGuangxiIps(50)
+import { randomBytes } from 'node:crypto'
+
 
 const url = 'ws://175.178.29.106:8000/ws'
 
@@ -14,20 +16,9 @@ const genHeaders = (ip) => ({
   'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
 })
 
-const listenWs = new WebSocket('ws://175.178.29.106:8000/ws')
-
-listenWs.on('open', () => {
-  console.log('listenWs open')
-})
-
-listenWs.on('message', (message) => {
-  console.log(message.toString())
-})
-
-
 const getSocket = (ip) => {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(url, {
+    const ws = new WebSocket(`${url}?fp=${randomBytes(16).toString('hex')}`, {
       headers: genHeaders(ip),
     })
     ws.on('open', () => {
@@ -38,6 +29,21 @@ const getSocket = (ip) => {
     })
   })
 }
+
+async function startListenWs() {
+  const listenWs = await getSocket(ips[0])
+  listenWs.on('open', () => {
+    console.log('listenWs open')
+  })
+  listenWs.on('message', (message) => {
+    console.log(message.toString())
+  })
+}
+
+await startListenWs()
+
+
+
 
 let socketList = await Promise.all(ips.map(ip => getSocket(ip)))
 socketList = socketList.filter(ws => ws !== null)
