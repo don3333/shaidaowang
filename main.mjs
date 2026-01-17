@@ -1,28 +1,29 @@
 import WebSocket from 'ws'
 import fs from 'node:fs'
 import { getGuangxiIps } from './generate_guangxi_ips.mjs'
-const ips = await getGuangxiIps(50)
+const ips = await getGuangxiIps(100)
 
-const url = 'ws://175.178.29.106:8000/ws'
+const url = 'wss://api.chouxiang.cc.cd/'
 
 const xiaoShuoText = fs.readFileSync('./品三国.txt', 'utf8')
 
 const genHeaders = (ip) => ({
   'X-Forwarded-For': ip,
-  referer: 'http://175.178.29.106',
-  host: '175.178.29.106:8000',
+  referer: 'https://chouxiang.cc.cd',
+  host: 'api.chouxiang.cc.cd',
   'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
 })
 
 const getSocket = (ip) => {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`${url}?fp=2fb373230878dcea9979482267c3738d`, {
+    const ws = new WebSocket(`${url}`, {
       headers: genHeaders(ip),
     })
     ws.on('open', () => {
       resolve(ws)
     })
     ws.on('error', (err) => {
+      console.log('ws error', err)
       resolve(null)
     })
   })
@@ -30,15 +31,14 @@ const getSocket = (ip) => {
 
 async function startListenWs() {
   const listenWs = await getSocket(ips[0])
-  listenWs.on('open', () => {
-    console.log('listenWs open')
-  })
   listenWs.on('message', (message) => {
     console.log(message.toString())
   })
 }
 
 await startListenWs()
+
+
 
 
 
@@ -58,12 +58,12 @@ async function sendMessage(index = 0) {
     const ws = socketList[index]
     if (xiaoShuoIndex > xiaoShuoText.length) xiaoShuoIndex = 0
     const nextXiaoShuoIndex = xiaoShuoIndex + 150
-    ws.send(JSON.stringify({
-      ip: ips[index],
-      message: xiaoShuoText.slice(xiaoShuoIndex, nextXiaoShuoIndex),
-      type: 'message',
-      username: '广西用户'
-    }))
+    // ws.send(JSON.stringify({
+    //   ip: ips[index],
+    //   message: xiaoShuoText.slice(xiaoShuoIndex, nextXiaoShuoIndex),
+    //   type: 'message',
+    //   username: '广西用户'
+    // }))
     setTimeout(() => {
       xiaoShuoIndex = nextXiaoShuoIndex
       sendMessage(index + 1)
