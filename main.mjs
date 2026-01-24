@@ -1,22 +1,21 @@
 import WebSocket from 'ws'
-import fs from 'node:fs'
-import { getGuangxiIps } from './generate_guangxi_ips.mjs'
-const ips = await getGuangxiIps(100)
+import { getRandomGuangxiIp } from './generate_guangxi_ips.mjs'
+import { randomBytes } from 'node:crypto'
 
-const url = 'wss://api.chouxiang.cc.cd/'
+const referer = '175.178.29.106:8000'
+const url = `ws://${referer}/ws`
 
-const xiaoShuoText = fs.readFileSync('./品三国.txt', 'utf8')
 
 const genHeaders = (ip) => ({
   'X-Forwarded-For': ip,
-  referer: 'https://chouxiang.cc.cd',
-  host: 'api.chouxiang.cc.cd',
+  referer: referer,
+  host: referer,
   'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
 })
 
 const getSocket = (ip) => {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`${url}`, {
+    const ws = new WebSocket(`${url}?fp=${randomBytes(16).toString('hex')}`, {
       headers: genHeaders(ip),
     })
     ws.on('open', () => {
@@ -29,51 +28,31 @@ const getSocket = (ip) => {
   })
 }
 
+let onlineCount = 0
+
 async function startListenWs() {
-  const listenWs = await getSocket(ips[0])
+  const listenWs = await getSocket(getRandomGuangxiIp())
   listenWs.on('message', (message) => {
-    console.log(message.toString())
+    const data = JSON.parse(message.toString())
+    const {type, count } = data
+    if (['join', 'leave'].includes(type)) {
+      onlineCount = count
+      console.log('onlineCount', onlineCount)
+    }
   })
 }
-
-await startListenWs()
-
+startListenWs()
 
 
-
-
-
-let socketList = await Promise.all(ips.map(ip => getSocket(ip)))
-socketList = socketList.filter(ws => ws !== null)
-
-
-let xiaoShuoIndex = 0
-
-async function sendMessage(index = 0) {
-  if (index >= socketList.length) {
-    sendMessage(0)
-    return
-  }
-  try {
-    const ws = socketList[index]
-    if (xiaoShuoIndex > xiaoShuoText.length) xiaoShuoIndex = 0
-    const nextXiaoShuoIndex = xiaoShuoIndex + 150
-    // ws.send(JSON.stringify({
-    //   ip: ips[index],
-    //   message: xiaoShuoText.slice(xiaoShuoIndex, nextXiaoShuoIndex),
-    //   type: 'message',
-    //   username: '广西用户'
-    // }))
-    setTimeout(() => {
-      xiaoShuoIndex = nextXiaoShuoIndex
-      sendMessage(index + 1)
-    }, 1000)
-  } catch (err) {
-    sendMessage(index + 1)
+while (true) {
+  if (onlineCount < 1000) {
+    await getSocket(getRandomGuangxiIp())
+    await new Promise(resolve => setTimeout(resolve, 2000))
   }
 }
 
-sendMessage()
+
+
 
 
 

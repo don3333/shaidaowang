@@ -56,4 +56,8 @@ export function getGuangxiIps(targetCount = 1000) {
   return Array.from(set).map(intToIpv4)
 }
 
+export function getRandomGuangxiIp() {
+  return getGuangxiIps(1)[0]
+}
+
 
