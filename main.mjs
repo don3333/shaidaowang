@@ -62,7 +62,7 @@ async function sendVerificationCode({
         headers
       })
       console.log(`sendVerificationCode ${email} data`, data)
-      return false
+      return true
     } catch (error) {
       console.log(`sendVerificationCode ${email} error`, error)
       return false
