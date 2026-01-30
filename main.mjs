@@ -96,6 +96,7 @@ async function registerWithVerificationCode() {
   }
   const intervalId = setInterval(async () => {
     const {email, messages: [message]} =  await getEmailMessage({_token, cookie})
+    console.log(message)
     if (message) {
       clearInterval(intervalId)
       const {content} = message
@@ -103,6 +104,7 @@ async function registerWithVerificationCode() {
       if (verificationCode) {
         await register({email, verificationCode})
         const {token} = await getToken({email, password})
+        console.log(token)
         const socket = new WebSocket(`wss://api.saidao.cc/ws/chat?token=${token}&fp=${randomUUID()}`)
         socket.on('open', () => {
           // console.log(message.toString())
