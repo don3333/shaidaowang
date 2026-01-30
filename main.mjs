@@ -105,13 +105,16 @@ async function registerWithVerificationCode() {
         await register({email, verificationCode})
         const {token} = await getToken({email, password})
         console.log(token)
-        const socket = new WebSocket(`wss://api.saidao.cc/ws/chat?token=${token}&fp=${randomUUID()}`)
+        const socket = new WebSocket(`wss://api.saidao.cc/ws/chat?token=${token}&fp=${randomUUID()}`, {headers})
         socket.on('open', () => {
           // console.log(message.toString())
           socket.send(JSON.stringify({
             type: 'chat',
             content:'测试',
           }))
+        })
+        socket.on('error', (error) => {
+          console.log(error)
         })
       }
     }
