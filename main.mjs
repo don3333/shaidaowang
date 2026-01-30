@@ -1,59 +1,87 @@
-import WebSocket from 'ws'
-import { getRandomGuangxiIp } from './generate_guangxi_ips.mjs'
-import { randomBytes } from 'node:crypto'
+import axios from "axios";
+axios.defaults.withCredentials = true
 
-const referer = '175.178.29.106:8000'
-const url = `ws://${referer}/ws`
-
-
-const genHeaders = (ip) => ({
-  'X-Forwarded-For': ip,
-  referer: referer,
-  host: referer,
-  'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
-})
-
-const getSocket = (ip) => {
-  return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`${url}?fp=${randomBytes(16).toString('hex')}`, {
-      headers: genHeaders(ip),
-    })
-    ws.on('open', () => {
-      resolve(ws)
-    })
-    ws.on('error', (err) => {
-      console.log('ws error', err)
-      resolve(null)
-    })
-  })
-}
-
-let onlineCount = 0
-
-async function startListenWs() {
-  const listenWs = await getSocket(getRandomGuangxiIp())
-  listenWs.on('message', (message) => {
-    const data = JSON.parse(message.toString())
-    const {type, count } = data
-    if (['join', 'leave'].includes(type)) {
-      onlineCount = count
-      console.log('onlineCount', onlineCount)
+async function  getEmailMessage({
+  _token,
+  cookie,
+}) {
+  const {data, headers } = await axios.post(`https://tempmailg.com/get_messages`, {
+    _token
+  }, {
+    headers: {
+      Cookie: cookie,
     }
   })
+  const {mailbox, messages} = data
+  return {
+    email: mailbox,
+    messages,
+    cookie: headers['set-cookie'].join('; '),
+  }
 }
-startListenWs()
 
-
-while (true) {
-  if (onlineCount < 1000) {
-    await getSocket(getRandomGuangxiIp())
-    await new Promise(resolve => setTimeout(resolve, 2000))
+async function register ({
+  email,
+  verificationCode,
+}) {
+  try {
+    const {data} = await axios.post(`https://api.saidao.cc/user/register`, 
+        {
+          email,
+          "password":"xx1234",
+          "confirmPassword":"xx1234",
+          verificationCode
+        }
+    )
+    if (data.code === '0') {
+      console.log(`register ${email} success`)
+    }
+  } catch (error) {
   }
 }
 
 
+async function sendVerificationCode({
+  email,
+}) {
+    try {
+      const {data} = await axios.post(`https://api.saidao.cc/user/sendVerificationCode`, {
+        email,
+        scene: "register"
+      })
+      console.log(`sendVerificationCode ${email} data`, data)
+    } catch (error) {
+      console.log(`sendVerificationCode ${email} error`, error)
+    }
+}
 
 
+async function registerWithVerificationCode() {
+  const {_token} = await genToken()
+  const {email, cookie} =  await getEmailMessage({_token})
+  await sendVerificationCode({email})
+  const intervalId = setInterval(async () => {
+    const {email, messages: [message]} =  await getEmailMessage({_token, cookie})
+    if (message) {
+      clearInterval(intervalId)
+      const {content} = message
+      const verificationCode = content.match(/<h2 style="font-size: 24px; font-weight: bold; text-align: center;">(.*?)<\/h2>/)[1]
+      register({email, verificationCode})
+    }
+  }, 1000)
+}
+
+async function genToken () {
+  const {data} = await axios.get(`https://tempmailg.com/`)
+  const reg = /<meta name="csrf-token" content="(.*?)">/
+  const csrfToken = reg.exec(data)[1]
+  return {
+    _token: csrfToken,
+  }
+}
 
 
-
+while (true) {
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  await registerWithVerificationCode()
+}
