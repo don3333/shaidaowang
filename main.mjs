@@ -1,6 +1,14 @@
 import axios from "axios";
+import WebSocket from "ws";
+import {randomUUID} from 'node:crypto'
 axios.defaults.withCredentials = true
+const password = 'xx1234'
 
+const headers = {
+  authority: 'api.saidao.cc',
+  referer: 'https://saidao.cc/',
+  origin: 'https://saidao.cc',
+}
 async function  getEmailMessage({
   _token,
   cookie,
@@ -28,9 +36,11 @@ async function register ({
     const {data} = await axios.post(`https://api.saidao.cc/user/register`, 
         {
           email,
-          "password":"xx1234",
-          "confirmPassword":"xx1234",
+          password,
+          "confirmPassword": password,
           verificationCode
+        },{
+          headers
         }
     )
     if (data.code === '0') {
@@ -48,25 +58,60 @@ async function sendVerificationCode({
       const {data} = await axios.post(`https://api.saidao.cc/user/sendVerificationCode`, {
         email,
         scene: "register"
+      }, {
+        headers
       })
       console.log(`sendVerificationCode ${email} data`, data)
+      return false
     } catch (error) {
       console.log(`sendVerificationCode ${email} error`, error)
+      return false
     }
+}
+
+async function getToken({
+  email,
+  password
+}) {
+  const result = await axios.post(`https://api.saidao.cc/user/login`, {
+    email,password
+  }, {
+    headers
+  })
+   const { token, user } = result.data
+   return {
+    token,
+    user
+   }
 }
 
 
 async function registerWithVerificationCode() {
   const {_token} = await genToken()
   const {email, cookie} =  await getEmailMessage({_token})
-  await sendVerificationCode({email})
+  console.log(email)
+  const sendSuccess = await sendVerificationCode({email})
+  if (!sendSuccess) {
+    return
+  }
   const intervalId = setInterval(async () => {
     const {email, messages: [message]} =  await getEmailMessage({_token, cookie})
     if (message) {
       clearInterval(intervalId)
       const {content} = message
-      const verificationCode = content.match(/<h2 style="font-size: 24px; font-weight: bold; text-align: center;">(.*?)<\/h2>/)[1]
-      register({email, verificationCode})
+      const verificationCode = content.match(/<h2 style="font-size: 24px; font-weight: bold; text-align: center;">(.*?)<\/h2>/)?.[1]
+      if (verificationCode) {
+        await register({email, verificationCode})
+        const {token} = await getToken({email, password})
+        const socket = new WebSocket(`wss://api.saidao.cc/ws/chat?token=${token}&fp=${randomUUID()}`)
+        socket.on('open', () => {
+          // console.log(message.toString())
+          socket.send(JSON.stringify({
+            type: 'chat',
+            content:'测试',
+          }))
+        })
+      }
     }
   }, 1000)
 }
