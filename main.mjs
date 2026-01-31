@@ -61,10 +61,8 @@ async function sendVerificationCode({
       }, {
         headers
       })
-      console.log(`sendVerificationCode ${email} data`, data)
       return true
     } catch (error) {
-      console.log(`sendVerificationCode ${email} error`, error)
       return false
     }
 }
@@ -74,11 +72,13 @@ async function getToken({
   password
 }) {
   const result = await axios.post(`https://api.saidao.cc/user/login`, {
-    email,password
+    email,
+    password
   }, {
     headers
   })
-   const { token, user } = result.data
+    console.log(result)
+   const { token, user } = result.data.data
    return {
     token,
     user
@@ -89,14 +89,12 @@ async function getToken({
 async function registerWithVerificationCode() {
   const {_token} = await genToken()
   const {email, cookie} =  await getEmailMessage({_token})
-  console.log(email)
   const sendSuccess = await sendVerificationCode({email})
   if (!sendSuccess) {
     return
   }
   const intervalId = setInterval(async () => {
     const {email, messages: [message]} =  await getEmailMessage({_token, cookie})
-    console.log(message)
     if (message) {
       clearInterval(intervalId)
       const {content} = message
